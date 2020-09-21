@@ -16,3 +16,8 @@ $ git clone https://github.com/rpiskule-lewis/devops-task-server
 
 If you are running windows home, you may need to update windows:
 https://www.microsoft.com/en-us/software-download/windows10
+
+### Running Without Docker:
+
+Install Python 3.8.5:
+https://www.python.org/downloads/release/python-385/
