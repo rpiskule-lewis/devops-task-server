@@ -17,6 +17,9 @@ $ git clone https://github.com/rpiskule-lewis/devops-task-server
 If you are running windows home, you may need to update windows:
 https://www.microsoft.com/en-us/software-download/windows10
 
+You will then need to install this (Steps 1-6):
+https://docs.microsoft.com/en-us/windows/wsl/install-win10#step-4---download-the-linux-kernel-update-package
+
 ### Running Without Docker:
 
 Install Python 3.8.5:
