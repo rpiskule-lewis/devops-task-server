@@ -6,6 +6,9 @@ RUN apk add dos2unix
 # Add our source code
 COPY source source
 
+# Add Django web framework
+RUN python -m pip install Django
+
 # Everyone is running on windows, so we need to convert all our files to Unix prior to running
 RUN find source/ -type f | xargs dos2unix
 
