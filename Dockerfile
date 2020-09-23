@@ -7,7 +7,7 @@ RUN apk add dos2unix
 COPY source source
 
 # Add Django web framework
-RUN python -m pip install Django
+RUN cd source && pip install -r requirements.txt
 
 # Everyone is running on windows, so we need to convert all our files to Unix prior to running
 RUN find source/ -type f | xargs dos2unix
@@ -19,4 +19,4 @@ WORKDIR source
 RUN chmod 755 entrypoint.sh
 
 # By default, run our entrypoint.sh script
-CMD /bin/sh entrypoint.sh
+CMD ["./entrypoint.sh"]
