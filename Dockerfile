@@ -1,13 +1,16 @@
 FROM python:3.8.5-alpine3.12
 
 # Add dos2unix since we are working on windows and need to convert our files
-RUN apk add dos2unix
+RUN apk add dos2unix git
 
 # Add our source code
 COPY source source
 
 # Add Django web framework
 RUN cd source && pip install -r requirements.txt
+
+# Create empty directory to host our scripts
+RUN mkdir -p /opt/scripts
 
 # Everyone is running on windows, so we need to convert all our files to Unix prior to running
 RUN find source/ -type f | xargs dos2unix
