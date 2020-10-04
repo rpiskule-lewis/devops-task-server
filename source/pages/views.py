@@ -15,7 +15,6 @@ def isBash(text):
 def run(request):
     path = request.GET.get('path','/')
     loadPath="/opt/scripts"+path
-    print(loadPath)
     if not isBash(path):
        return HttpResponse("Don't break my server")
 
@@ -23,29 +22,23 @@ def run(request):
     file1 = open(loadPath, 'r') 
     lines = file1.readlines()
     for line in lines:
-        print(line)
+        line=line.rstrip("\n")
         p = re.compile('#[ ]*input[ ]*([a-zA-Z0-9]*)[ ]*(.*)')
-        m = p.match(line)
+        m = p.fullmatch(line)
         if m:
             key=m.group(1)
             value=request.POST.get(key)
             pattern=m.group(2)
             p2 = re.compile(pattern)
-            m2 = p2.match(value)
+            m2 = p2.fullmatch(value)
             if not m2:
                 return HttpResponse("Value [" + value + "] for input [" + key + "] does not match regexp [" + pattern + "]")
+            print("[" + value + "] matches [" + pattern + "]")
             env[key]=value
 
-    print(loadPath);
-    print(loadPath.rindex('/'));
     end=loadPath.rindex('/')
     cwd=loadPath[0:end]
     env['PATH']=env['PATH']+":"+cwd
-    print(cwd)
-    print(os.listdir(cwd))
-    print(env)
-    print("["+loadPath+"]")
-    #capture_output=True,
     cp = subprocess.run(loadPath,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,cwd=cwd,env=env)
     context = {
        'path':path,
@@ -68,8 +61,9 @@ def index(request):
         inputs = []
         regexps = {}
         for line in lines:
+            line=line.rstrip("\n")
             p = re.compile('#[ ]*input[ ]*([a-zA-Z0-9]*)[ ]*(.*)')
-            m = p.match(line)
+            m = p.fullmatch(line)
             if m:
                 inputs.append(m.group(1))
                 regexps[m.group(1)]=m.group(2)
