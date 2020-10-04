@@ -1,0 +1,14 @@
+<html>
+  <body>
+    <h1>{{path}}</h1>
+    <form action="/run?path={{path}}" method="post">
+      {% csrf_token %}
+{% if inputs %}    
+    {% for input in inputs %}
+        {{input}}:<input type="text" id="{{input}}" name="{{input}}"><br><br>
+    {% endfor %}
+{% endif %}
+	<input type="submit" value="Run">
+    </form>	
+  </body>
+</html>

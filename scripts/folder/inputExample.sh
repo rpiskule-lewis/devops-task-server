@@ -1,5 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-#input string text
+#input text (a-zA-Z0-9)*
 
+echo "The following demonstrates input:"
 echo "$text"
