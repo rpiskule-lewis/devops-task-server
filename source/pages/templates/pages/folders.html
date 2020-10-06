@@ -4,7 +4,7 @@
 {% if folders %}
     <ul>
     {% for folder in folders %}
-        <li><a href="/folders?path={{path}}{{folder}}">{{ folder }}</a></li>
+        <li><a href="/v1/folders?path={{path}}{{folder}}">{{ folder }}</a></li>
     {% endfor %}
     </ul>
 {% endif %}
@@ -12,7 +12,7 @@
 {% if scripts %}
     <ul>
     {% for script in scripts %}
-        <li><a href="/scripts?path={{path}}{{script}}">{{ script }}</a></li>
+        <li><a href="/v1/scripts?path={{path}}{{script}}">{{ script }}</a></li>
     {% endfor %}
     </ul>
 {% endif %}

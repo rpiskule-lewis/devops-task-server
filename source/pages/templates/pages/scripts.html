@@ -1,7 +1,7 @@
 <html>
   <body>
     <h1>{{path}}</h1>
-    <form action="/tasks?path={{path}}" method="post">
+    <form action="/v1/tasks?path={{path}}" method="post">
       {% csrf_token %}
 {% if inputs %}    
     {% for input in inputs %}
