@@ -1,6 +1,7 @@
 import os
 import re
 import subprocess
+import json
 from django.shortcuts import render
 from django.template import loader
 
@@ -8,52 +9,73 @@ from django.template import loader
 
 # pages/views.py
 from django.http import HttpResponse
+from django.http import JsonResponse
 
 def isBash(text):
     return text.endswith('.sh')
+
+def index(request):
+    template = loader.get_template('pages/index.html')
+    context = {}
+    return HttpResponse(template.render(context, request))
+    
 
 def tasks(request):
     path = request.GET.get('path','/')
     loadPath="/opt/scripts"+path
     if not isBash(path):
-       return HttpResponse("Don't break my server")
-
+        return HttpResponse("Invalid Request: Not a bash script!",status=406)
+    
     env=os.environ.copy()
     file1 = open(loadPath, 'r') 
     lines = file1.readlines()
+    jsonData=json.loads(request.body)
     for line in lines:
         line=line.rstrip("\n")
         p = re.compile('#[ ]*input[ ]*([a-zA-Z0-9]*)[ ]*(.*)')
         m = p.fullmatch(line)
         if m:
             key=m.group(1)
-            value=request.POST.get(key)
+            #value=request.POST.get(key)
+            value=""
+            for nameValue in jsonData:
+                if nameValue.get("name") == key:
+                    value=nameValue.get("value")
+                    break
             pattern=m.group(2)
             p2 = re.compile(pattern)
             m2 = p2.fullmatch(value)
             if not m2:
-                return HttpResponse("Value [" + value + "] for input [" + key + "] does not match regexp [" + pattern + "]")
-            print("[" + value + "] matches [" + pattern + "]")
+                return HttpResponse("Value [" + value + "] for input [" + key + "] does not match regexp [" + pattern + "]", status=406)
             env[key]=value
 
     end=loadPath.rindex('/')
     cwd=loadPath[0:end]
     env['PATH']=env['PATH']+":"+cwd
     cp = subprocess.run(loadPath,shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT,cwd=cwd,env=env)
+    
     context = {
        'path':path,
        'output': cp.stdout.decode(),
     }
-    template = loader.get_template('pages/tasks.html')
-    return HttpResponse(template.render(context, request))
+    
+    if request.content_type == "application/json":
+        outputObject = {
+            'output': cp.stdout.decode(),
+            'returnCode': cp.returncode
+        }
+        outputArray = [outputObject]
+        return JsonResponse(outputArray, safe=False)
+    return HttpResponse("Only JSON Is Supported",status=415)
+    # template = loader.get_template('pages/tasks.html')
+    # return HttpResponse(template.render(context, request))
 
 def scripts(request):
     path = request.GET.get('path','/')
     loadPath="/opt/scripts"+path
-    print(loadPath)
 
     if not isBash(path):
-        return HttpResponse("Don't break my server")
+        return HttpResponse("Invalid Request: Not a bash script!", status=406)
 
     
     # Using readlines() 
@@ -63,6 +85,7 @@ def scripts(request):
     # input myText a-zA-Z*
     inputs = []
     regexps = {}
+    jsonInputs = []
     for line in lines:
         line=line.rstrip("\n")
         p = re.compile('#[ ]*input[ ]*([a-zA-Z0-9]*)[ ]*(.*)')
@@ -70,6 +93,11 @@ def scripts(request):
         if m:
             inputs.append(m.group(1))
             regexps[m.group(1)]=m.group(2)
+            jsonInputs.append({
+                'input':m.group(1),
+                'regexp':m.group(2)
+            })
+            
 
     context = {
         'path':path,
@@ -77,15 +105,20 @@ def scripts(request):
         'regexps': regexps,
     }
     template = loader.get_template('pages/scripts.html')
-    return HttpResponse(template.render(context, request))
+
+    if request.content_type == "application/json":
+        inputObject = { 'inputs': jsonInputs}
+        inputArray = [inputObject]
+        return JsonResponse(inputArray, safe=False)
+    return HttpResponse("Only JSON Is Supported",status=415)
+    # return HttpResponse(template.render(context, request))
 
 def folders(request):
     path = request.GET.get('path','/')
     loadPath="/opt/scripts"+path
-    print(loadPath)
 
     if isBash(path):
-        return HttpResponse("Don't break my server")
+        return HttpResponse("Invalid Request: Not a folder!", status=406)
 
     items = os.listdir(loadPath)
     folders = []
@@ -104,5 +137,16 @@ def folders(request):
     }
     
     template = loader.get_template('pages/folders.html')
-    return HttpResponse(template.render(context, request))
+
+    if request.content_type == "application/json":
+        paths = []
+        for i in folders: 
+            paths.append(i)
+        for i in scripts: 
+            paths.append(i)             
+        pathObject = { 'paths': paths }
+        pathArray = [pathObject]
+        return JsonResponse(pathArray, safe=False)
+    return HttpResponse("Only JSON Is Supported",status=415)    
+    #return HttpResponse(template.render(context, request))
         

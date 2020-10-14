@@ -1,0 +1,162 @@
+<html>
+  <head>
+    <title>Devops Task Server</title>
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+  </head>
+  <body>
+
+<script type="text/javascript">
+  apiVersion="v1"
+  foldersPath="folders"
+  scriptsPath="scripts"
+  tasksPath="tasks"
+
+  function getBreadcrumb(path) {
+      returnString = '<nav aria-label="breadcrumb">'
+      paths = path.split("/");
+      
+      returnString += '<ol class="breadcrumb">'
+      returnString += '<li class="breadcrumb-item"><a href="/">Home</a></li>'
+
+      pathBuilder="/"
+      paths.forEach(async function(item) {
+	  if (item != "") {
+	      pathBuilder += item
+	      if (!item.endsWith(".sh"))
+	      {
+		  pathBuilder += "/"
+	      }
+	      returnString += '<li class="breadcrumb-item"><a href="/?path='+pathBuilder+'">'+item+'</a></li>'
+	  }
+      })
+      returnString += '</ol>'
+      returnString += "</nav>"
+      return returnString
+  }
+
+  function runTask(script,friendlyName) {
+      $("#output").show()
+      $("#error").hide()
+      $( "#output" ).html("");
+      $( "#output" ).html("Running...");
+      jsonData=JSON.stringify($("#inputForm").serializeArray())
+      $.ajax({
+	  url: script,
+	  contentType: "application/json",
+	  dataType : 'json', // data type
+          data : jsonData,
+	  beforeSend: function(request) {
+	      request.setRequestHeader("X-CSRFToken", $('input[name ="csrfmiddlewaretoken"]').val());
+	  },
+	  type: "POST",
+	  success: function( data ) {
+	      setTimeout(() => {
+		  $("#output").show()
+		  $("#error").hide()		  
+		  $( "#output" ).html("<samp>"+data[0]['output']+"</samp>")
+		  $( "#error" ).html("")
+	      }, 500);
+	  },
+	  error: function (xhr, ajaxOptions, thrownError) {
+	      setTimeout(() => {
+		  $("#output").hide()
+		  $("#error").show()		  
+		  $( "#output" ).html("")
+		  $( "#error" ).html(xhr.responseText)
+	      }, 500);	      
+	  }
+      })
+    }
+  
+  function loadScript(script,friendlyName) {
+      $.ajax({
+	  url: script,
+	  contentType: "application/json",
+	  type: "GET",
+	  success: function( data ) {
+	      $( "#display" ).html(getBreadcrumb(friendlyName)+'<form method=\"POST\" target=\"/?path='+friendlyName+'&run=true\" id=\"inputForm\">{% csrf_token %}</form>');
+              data[0]['inputs'].forEach(async function(item) {
+		  var input=item['input']
+		  var regexp=item['regexp']
+		  if (!regexp.startsWith("^")) {
+		      regexp="^"+regexp
+		  }
+ 		  if (!regexp.endsWith("$")) {
+		      regexp=regexp+"$"
+		  }
+
+                  $('#inputForm').append("<label for='"+input+"'>"+input+":</label><br><input name=\""+input+"\" id=\""+input+"\"/><br>")
+		  
+		  $('#'+input).keyup(function(){
+		      var value=$('#'+input).val()
+		      if (!value.match(regexp)) {
+			  $('#'+input).css('border-color','#f00')
+		      }
+		      else {
+			  $('#'+input).css('border-color','#000')
+		      }
+		  })
+	      })
+              $('#inputForm').append("<br><input class=\"btn btn-primary\" type=\"submit\" value=\"Run\">")
+	      $('#inputForm').submit(function(event) {
+		  var script=apiVersion+"/"+tasksPath+"?path="+path	   
+		  runTask(script,path)
+		  event.preventDefault();
+	      });
+
+	  }
+      })
+  }
+  
+  function loadPath(folder,friendlyName) {
+      $.ajax({
+	  url: folder,
+	  contentType: "application/json",
+	  type: "GET",
+	  success: function( data ) {
+	      $( "#display" ).html(getBreadcrumb(friendlyName)+"<ul id=\"list\" class=\"list-group\"></ul>");
+              data[0]['paths'].forEach(async function(item) {
+		  newId=item.replaceAll('/','_')
+  		  newId=newId.replaceAll('.','_')
+                  $('#list').append("<li class=\"list-group-item\"><a id="+newId+" href='/?path="+friendlyName+item+"'>"+item+"</a></li>")
+              })	    
+	  }
+      });
+  }
+
+  $(document).ready(function(){
+      searchParams = new URLSearchParams(window.location.search)
+      path="/"
+      $("#output").hide()
+      $("#error").hide()
+      if (searchParams.has('path'))
+	  path=searchParams.get('path')
+
+      if (path.endsWith(".sh"))
+      {
+	  script=apiVersion+"/"+scriptsPath+"?path="+path
+	  loadScript(script,path)
+      }
+      else
+      {
+	  folder=apiVersion+"/"+foldersPath+"?path="+path	  
+	  loadPath(folder,path)
+      }
+  });
+
+</script>
+<div class="container">
+  <h1>Devops Task Server</h1>
+  <div class="card">
+    <div class="card-body">
+      <div id="display"></div>
+      <div id="output" class="alert alert-dark" role="alert"></div>
+      <div id="error" class="alert alert-danger" role="alert"></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
