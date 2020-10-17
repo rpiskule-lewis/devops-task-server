@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'pages',
+    "encrypted_fields",
 ]
 
 MIDDLEWARE = [
@@ -76,8 +77,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'devops_task_server',
+        'USER': 'postgres',
+        'PASSWORD': 'password',
+        'HOST': 'postgres',
+        'PORT': '5432',
     }
 }
 
@@ -119,3 +124,14 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+
+# This is required for encryption
+import os
+# A list of hex-encoded 32 byte keys
+# You only need one unless/until rotating keys
+FIELD_ENCRYPTION_KEYS = [
+    os.environ.get('FIELD_ENCRYPTION_KEY', '')
+]
+
+# Rabbit MQ
+CELERY_BROKER_URL = 'amqp://rabbitmq'

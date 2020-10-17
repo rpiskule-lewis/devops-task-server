@@ -1,0 +1,40 @@
+---
+- apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: devops-task-server-deployment
+    labels:
+      app: devops-task-server
+  spec:
+    replicas: 2
+    selector:
+      matchLabels:
+        app: devops-task-server
+    template:
+      metadata:
+        labels:
+          app: devops-task-server
+      spec:
+        containers:
+        - name: devops-task-server
+          image: rpiskulelewis/devops-task-server:tagname
+          ports:
+          - containerPort: 8080
+          env:
+          - name: GIT_REPO
+            value: https://github.com/rpiskule-lewis/devops-task-server.git
+          - name: BRANCH
+            value: master
+          - name: ROOT_FOLDER
+            value: scripts
+- apiVersion: v1
+  kind: Service
+  metadata:
+    name: devops-task-server
+  spec:
+    selector:
+      app: devops-task-server
+    ports:
+      - protocol: TCP
+        port: 8080
+        targetPort: 8080

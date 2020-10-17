@@ -4,6 +4,7 @@ import subprocess
 import json
 from django.shortcuts import render
 from django.template import loader
+from pages.models import Task
 
 # Create your views here.
 
@@ -58,6 +59,10 @@ def tasks(request):
        'path':path,
        'output': cp.stdout.decode(),
     }
+
+    # Create a new record using the model's constructor.
+    task = Task(inputs=json.dumps(env),script=path)
+    task.save()
     
     if request.content_type == "application/json":
         outputObject = {
